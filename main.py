@@ -15,7 +15,7 @@ def is_twitch_channel_live(channel_response):
 
 
 def extract_livestream_title(channel_response):
-    description_tag = "<meta name=\"description\" content=\""
+    description_tag = "<meta property=\"og:description\" content=\""
 
     des_start_index = channel_response.text.find(description_tag)
     des_start_index += len(description_tag)
@@ -28,6 +28,9 @@ def extract_livestream_title(channel_response):
 def update_twitch_channel_status(channel_name):
     channel_url = f"https://www.twitch.tv/{channel_name}"
     response = requests.get(channel_url)
+    # sometimes twitch returns generic html response instead of channel one
+    while not (channel_name in response.text):
+        response = requests.get(channel_url)
 
     if response.status_code != 200:
         print(
@@ -51,7 +54,11 @@ def monitor_twitch_channels():
     print("-------")
     print(f"Updating {datetime.now()}")
     for channel_name in twitch_channels:
-        update_twitch_channel_status(channel_name)
+        try:
+            update_twitch_channel_status(channel_name)
+        except Exception as e:
+            print(f"Error: {e}")
+
     print("-------")
 
 
