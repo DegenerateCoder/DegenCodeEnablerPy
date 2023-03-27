@@ -18,8 +18,15 @@ def extract_livestream_title(channel_response):
     description_tag = "<meta property=\"og:description\" content=\""
 
     des_start_index = channel_response.text.find(description_tag)
-    des_start_index += len(description_tag)
-    des_end_index = channel_response.text.find("\"", des_start_index)
+    des_end_index = 0
+    if(des_start_index != -1):
+        des_start_index += len(description_tag)
+        des_end_index = channel_response.text.find("\"", des_start_index)
+    else: # different order of attributes
+        description_tag = "\" property=\"og:description\"/>"
+        des_end_index = channel_response.text.find(description_tag)
+        des_start_index = channel_response.text.rfind("\"", 0,des_end_index)
+        des_start_index += 1
 
     livestream_title = channel_response.text[des_start_index:des_end_index]
     return livestream_title
