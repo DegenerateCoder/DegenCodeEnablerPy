@@ -19,13 +19,13 @@ def extract_livestream_title(channel_response):
 
     des_start_index = channel_response.text.find(description_tag)
     des_end_index = 0
-    if(des_start_index != -1):
+    if (des_start_index != -1):
         des_start_index += len(description_tag)
         des_end_index = channel_response.text.find("\"", des_start_index)
-    else: # different order of attributes
+    else:  # different order of attributes
         description_tag = "\" property=\"og:description\"/>"
         des_end_index = channel_response.text.find(description_tag)
-        des_start_index = channel_response.text.rfind("\"", 0,des_end_index)
+        des_start_index = channel_response.text.rfind("\"", 0, des_end_index)
         des_start_index += 1
 
     livestream_title = channel_response.text[des_start_index:des_end_index]
@@ -34,10 +34,15 @@ def extract_livestream_title(channel_response):
 
 def update_twitch_channel_status(channel_name):
     channel_url = f"https://www.twitch.tv/{channel_name}"
-    response = requests.get(channel_url)
+    headers = {"Cache-Control": "no-cache, no-store, must-revalidate",
+               "Pragma": "no-cache",
+               "Expires": "0",
+               "Surrogate-Control": "no-store",
+               "Vary": "*"}
+    response = requests.get(channel_url, headers=headers)
     # sometimes twitch returns generic html response instead of channel one
     while not (channel_name in response.text):
-        response = requests.get(channel_url)
+        response = requests.get(channel_url, headers=headers)
 
     if response.status_code != 200:
         print(
@@ -59,12 +64,12 @@ def update_twitch_channel_status(channel_name):
 
 def monitor_twitch_channels():
     print("-------")
-    print(f"Updating {datetime.now()}")
+    print(f"Updating Twitch {datetime.now()}")
     for channel_name in twitch_channels:
         try:
             update_twitch_channel_status(channel_name)
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error: {e}; for channel: {channel_name}")
 
     print("-------")
 
