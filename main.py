@@ -1,7 +1,7 @@
 import requests
 import time
 from datetime import datetime
-
+from yt_mon import monitor_youtube_channels
 
 def is_twitch_channel_live(channel_response):
     live_identifiers = ["<script type=\"application/ld+json\">",
@@ -90,6 +90,7 @@ if __name__ == "__main__":
 
     while (True):
         monitor_twitch_channels()
+        monitor_youtube_channels()
         time.sleep(60)
 
     exit(0)
