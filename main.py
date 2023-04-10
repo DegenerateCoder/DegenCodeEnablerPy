@@ -1,22 +1,31 @@
 import requests
+import traceback
+import json
 import time
 from datetime import datetime
-import json
+from dataclasses import dataclass
+
+
+@dataclass
+class TwitchChannel:
+    name: str
+    live: bool = False
+    livestream_vod_url: str = ""
 
 
 def set_gql_twitch_clientid():
     global client_id
     url = "https://www.twitch.tv/"
     response = requests.get(url)
-    
-    index = response.text.find("clientId=\"") 
-    index += len("clientId=\"")
-    end_index = response.text.find("\"",index)
-    
-    client_id = response.text[index:end_index]
-    
 
-def is_twitch_channel_live(channel_name):
+    index = response.text.find("clientId=\"")
+    index += len("clientId=\"")
+    end_index = response.text.find("\"", index)
+
+    client_id = response.text[index:end_index]
+
+
+def is_twitch_channel_live(channel_name: str):
     channel_url = f"https://gql.twitch.tv/gql"
     headers = {"Cache-Control": "no-cache, no-store, must-revalidate",
                "Pragma": "no-cache",
@@ -54,7 +63,7 @@ def is_twitch_channel_live(channel_name):
     return response.json()[0]['data']['user']['stream'] != None
 
 
-def get_livestream_title(channel_name):
+def get_livestream_title_and_vodid(channel_name: str):
     channel_url = f"https://gql.twitch.tv/gql"
     headers = {"Cache-Control": "no-cache, no-store, must-revalidate",
                "Pragma": "no-cache",
@@ -92,51 +101,57 @@ def get_livestream_title(channel_name):
         raise RuntimeError(
             f"Request failed: {response.status_code} reason: {response.reason}")
 
-    vid_title = response.json(
-    )[0]['data']['user']['videos']['edges'][0]['node']['title']
-    return vid_title
+    vid_json = response.json()[0]['data']['user']['videos']['edges'][0]['node']
+    vid_title = vid_json['title']
+    vod_id = vid_json['id']
+    return (vid_title, vod_id)
 
 
-def update_twitch_channel_status(channel_name):
-    is_live = is_twitch_channel_live(channel_name)
-    if (twitch_channels[channel_name] != is_live):
-        twitch_channels[channel_name] = is_live
+def update_twitch_channel_status(channel: TwitchChannel):
+    is_live = is_twitch_channel_live(channel.name)
+    if (channel.live != is_live):
         if (is_live):
-            title = get_livestream_title(channel_name)
-            channel_url = f"https://www.twitch.tv/{channel_name}"
-            message = f"{channel_name} is Live! {title} \n{channel_url}"
+            title_vodid = get_livestream_title_and_vodid(channel.name)
+            title = title_vodid[0]
+            vod_id = title_vodid[1]
+            channel.livestream_vod_url = f"https://www.twitch.tv/videos/{vod_id}"
+            channel_url = f"https://www.twitch.tv/{channel.name}"
+            message = f"{channel.name} is Live! {title} \n{channel_url}"
             notify(message)
         else:
-            message = f"{channel_name} has gone offline"
+            message = f"{channel.name} has gone offline \n{channel.livestream_vod_url}"
+            channel.livestream_vod_url = ""
             notify(message)
+        channel.live = is_live
 
 
 def monitor_twitch_channels():
     print("-------")
     print(f"Updating Twitch {datetime.now()}")
-    for channel_name in twitch_channels:
+    for channel in twitch_channels:
         try:
-            update_twitch_channel_status(channel_name)
+            update_twitch_channel_status(channel)
         except Exception as e:
-            print(f"Error: {e}; for channel: {channel_name}")
+            print(f"Error: {e}; for channel: {channel.name}")
+            traceback.print_exc()
+            print("")
 
     print("-------")
 
 
-def notify(notification_message):
+def notify(notification_message: str):
     # TODO
-    print(notification_message)
+    print(f"{notification_message}\n")
 
 
 if __name__ == "__main__":
     print("Hello world! from DegenCodeEnabler")
 
     global twitch_channels
-    twitch_channels = {
-        "channel1": False,
-        "channel2": False
-    }
-
+    twitch_channels = [
+        TwitchChannel("channel1"),
+        TwitchChannel("channel2")
+    ]
     set_gql_twitch_clientid()
 
     while (True):
