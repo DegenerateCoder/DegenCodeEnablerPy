@@ -54,7 +54,7 @@ def update_youtube_channel_status(channel: YTChannel):
     if (channel.latest_vid_url != vid_url):
         message = f"{channel.name} published new video \"{vid_title}\"; \n https://piped.garudalinux.org{vid_url}"
         notify(message)
-        channel.latest_vid_url = vid_title
+        channel.latest_vid_url = vid_url
 
 
 # TODO: can fail
