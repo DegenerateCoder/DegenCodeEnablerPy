@@ -3,7 +3,7 @@ import traceback
 import json
 import time
 from datetime import datetime
-from dataclasses import dataclass
+from yt_mon import monitor_youtube_channels, initialize_channels_data
 
 
 @dataclass
@@ -152,10 +152,13 @@ if __name__ == "__main__":
         TwitchChannel("channel1"),
         TwitchChannel("channel2")
     ]
+    
     set_gql_twitch_clientid()
+    initialize_channels_data()
 
     while (True):
         monitor_twitch_channels()
+        monitor_youtube_channels()
         time.sleep(60)
 
     exit(0)
