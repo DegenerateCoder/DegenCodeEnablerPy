@@ -9,7 +9,7 @@ class YTChannel:
     id: str
     name: str = ""
     latest_vid_url: str = ""
-
+    latest_upload_timestamp: int = 0
 
 youtube_channels = [
     YTChannel("channel1", ""),
@@ -29,10 +29,22 @@ def monitor_youtube_channels():
     print("-------")
 
 
+@dataclass
+class VideoData:
+    title: str
+    url: str
+    upload_timestamp: int
+
+
 # TODO: can fail
-def get_latest_vid_title_and_url(channel_id: str) -> tuple[str, str]:
+def get_latest_vid_details(channel_id: str) -> VideoData:
     channel_url = f"https://piped-api.garudalinux.org/channel/{channel_id}"
-    response = requests.get(channel_url)
+    headers = {"Cache-Control": "no-cache, no-store, must-revalidate",
+               "Pragma": "no-cache",
+               "Expires": "0",
+               "Surrogate-Control": "no-store",
+               "Vary": "*"}
+    response = requests.get(channel_url, headers=headers)
 
     if response.status_code != 200:
         print(
@@ -44,16 +56,19 @@ def get_latest_vid_title_and_url(channel_id: str) -> tuple[str, str]:
     related_streams = channel_json['relatedStreams']
     vid_title = related_streams[0]['title']
     vid_url = related_streams[0]['url']
-    return (vid_title, vid_url)
+    vid_timestamp = related_streams[0]['uploaded']
+    return VideoData(vid_title,vid_url,vid_timestamp)
 
 
 def update_youtube_channel_status(channel: YTChannel):
-    latest_vid_details = get_latest_vid_title_and_url(channel.id)
-    vid_title = latest_vid_details[0]
-    vid_url = latest_vid_details[1]
-    if (channel.latest_vid_url != vid_url):
+    latest_vid_details = get_latest_vid_details(channel.id)
+    vid_title = latest_vid_details.title
+    vid_url = latest_vid_details.url
+    vid_timestamp = latest_vid_details.upload_timestamp
+    if (channel.latest_vid_url != vid_url and channel.latest_upload_timestamp < vid_timestamp):
         message = f"{channel.name} published new video \"{vid_title}\"; \n https://piped.garudalinux.org{vid_url}"
         notify(message)
+        channel.latest_upload_timestamp = vid_timestamp
         channel.latest_vid_url = vid_url
 
 
@@ -80,8 +95,9 @@ def initialize_channels_data():
         if channel.handle != "":
             channel.id = get_channel_id(channel.handle)
         channel.name = get_channel_name(channel.id)
-        latest_vid_details = get_latest_vid_title_and_url(channel.id)
-        channel.latest_vid_url = latest_vid_details[1]
+        latest_vid_details = get_latest_vid_details(channel.id)
+        channel.latest_upload_timestamp = latest_vid_details.upload_timestamp
+        channel.latest_vid_url = latest_vid_details.url
 
 
 def notify(notification_message: str):
