@@ -123,7 +123,7 @@ def get_livestream_vodid(channel_name: str) -> str:
                 "limit": 1,
                 "channelOwnerLogin": "",
                 "broadcastType": "ARCHIVE",
-                "videoSort": "TIMEget_livestream_title
+                "videoSort": "TIME"
             },
             "extensions": {
                 "persistedQuery": {
