@@ -3,6 +3,7 @@ import traceback
 import json
 from datetime import datetime
 from dataclasses import dataclass
+from bot import notify
 
 
 @dataclass
@@ -177,6 +178,3 @@ def monitor_twitch_channels():
     print("-------")
 
 
-def notify(notification_message: str):
-    # TODO
-    print(f"{notification_message}\n")
